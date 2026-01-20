@@ -23,7 +23,6 @@ class LanguageCurrencySwitch extends Module
 
     public function install()
     {
-        // Regisztráljuk a modult és a hook-ot, ami minden oldalbetöltéskor lefut
         return parent::install() && $this->registerHook('actionFrontControllerAfterInit');
     }
 
@@ -32,12 +31,8 @@ class LanguageCurrencySwitch extends Module
         return parent::uninstall();
     }
 
-    /**
-     * Ez a funkció fut le minden oldalbetöltés elején
-     */
     public function hookActionFrontControllerAfterInit($params)
     {
-        // Csak a vásárlói oldalon fusson, az adminban ne
         if ($this->context->controller->controller_type != 'front') {
             return;
         }
@@ -45,29 +40,21 @@ class LanguageCurrencySwitch extends Module
         $current_lang = $this->context->language->iso_code;
         $current_currency = $this->context->currency->iso_code;
 
-        // LOGIKA: MAGYAR NYELV -> FORINT
         if ($current_lang == 'hu' && $current_currency != 'HUF') {
             $this->setCurrencyByIso('HUF');
-        } 
-        // LOGIKA: ROMÁN NYELV -> RON
-        elseif ($current_lang == 'ro' && $current_currency != 'RON') {
+        } elseif ($current_lang == 'ro' && $current_currency != 'RON') {
             $this->setCurrencyByIso('RON');
         }
     }
 
-    /**
-     * Segédfüggvény a pénznem kényszerített átváltásához
-     */
     private function setCurrencyByIso($iso_code)
     {
         $id_currency = (int)Currency::getIdByIsoCode($iso_code);
         
         if ($id_currency) {
-            // Beállítjuk a sütit (cookie), hogy megjegyezze a választást
             $this->context->cookie->id_currency = $id_currency;
             $this->context->currency = new Currency($id_currency);
             
-            // Ha van kosár, abban is át kell váltani a pénznemet
             if (isset($this->context->cart) && $this->context->cart->id) {
                 $this->context->cart->id_currency = $id_currency;
                 $this->context->cart->update();
